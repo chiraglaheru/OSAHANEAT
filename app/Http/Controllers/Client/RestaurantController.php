@@ -5,9 +5,6 @@ namespace App\Http\Controllers\Client;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
-use Intervention\Image\ImageManager;
-use Intervention\Image\Drivers\Gd\Driver;
 use Haruncpi\LaravelIdGenerator\IdGenerator;
 use Carbon\Carbon;
 use App\Models\Category;
@@ -15,14 +12,13 @@ use App\Models\Menu;
 use App\Models\Product;
 use App\Models\City;
 use App\Models\Gallery;
+use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 
 class RestaurantController extends Controller
 {
     ////////////////////////////////
     /////////// Menu Methods ///////
     ////////////////////////////////
-
-
 
     public function AllMenu()
     {
@@ -36,35 +32,31 @@ class RestaurantController extends Controller
         return view('client.backend.menu.add_menu');
     }
 
-
     public function StoreMenu(Request $request)
-{
-    $request->validate([
-        'menu_name' => 'required|string|max:255',
-        'image' => 'required|mimetypes:image/jpeg,image/png,image/jpg,image/gif,image/webp|max:4096',
-    ]);
-
-    if ($request->hasFile('image')) {
-        $image = $request->file('image');
-        $manager = new ImageManager(new Driver());
-        $name_gen = hexdec(uniqid()) . '.' . $image->getClientOriginalExtension();
-
-        $img = $manager->read($image);
-        $img->resize(300, 300)->save(public_path('upload/menu/' . $name_gen));
-
-        $save_url = 'upload/menu/' . $name_gen;
-
-        Menu::create([
-            'menu_name' => $request->menu_name,
-            'client_id' => Auth::guard('client')->id(),
-            'image' => $save_url,
+    {
+        $request->validate([
+            'menu_name' => 'required|string|max:255',
+            'image' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
         ]);
-    }
 
-    return redirect()->route('all.menu')->with([
-        'message' => 'Menu Inserted Successfully',
-        'alert-type' => 'success'
-    ]);
+        if ($request->hasFile('image')) {
+            $uploadedFile = Cloudinary::upload($request->file('image')->getRealPath(), [
+                'folder' => 'foodweb/menu',
+                'transformation' => [['width' => 300, 'height' => 300, 'crop' => 'fill']]
+            ]);
+            $save_url = $uploadedFile->getSecurePath();
+
+            Menu::create([
+                'menu_name' => $request->menu_name,
+                'client_id' => Auth::guard('client')->id(),
+                'image' => $save_url,
+            ]);
+        }
+
+        return redirect()->route('all.menu')->with([
+            'message' => 'Menu Inserted Successfully',
+            'alert-type' => 'success'
+        ]);
     }
 
     public function EditMenu($id)
@@ -77,24 +69,17 @@ class RestaurantController extends Controller
     {
         $request->validate([
             'menu_name' => 'required|string|max:255',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
         ]);
 
         $menu = Menu::findOrFail($request->id);
 
         if ($request->hasFile('image')) {
-            // Delete old image
-            if ($menu->image && file_exists(public_path($menu->image))) {
-                unlink(public_path($menu->image));
-            }
-
-            // Upload new image
-            $image = $request->file('image');
-            $manager = new ImageManager(new Driver());
-            $name_gen = hexdec(uniqid()) . '.' . $image->getClientOriginalExtension();
-            $img = $manager->read($image);
-            $img->resize(300, 300)->save(public_path('upload/menu/' . $name_gen));
-            $save_url = 'upload/menu/' . $name_gen;
+            $uploadedFile = Cloudinary::upload($request->file('image')->getRealPath(), [
+                'folder' => 'foodweb/menu',
+                'transformation' => [['width' => 300, 'height' => 300, 'crop' => 'fill']]
+            ]);
+            $save_url = $uploadedFile->getSecurePath();
 
             $menu->update([
                 'menu_name' => $request->menu_name,
@@ -106,31 +91,21 @@ class RestaurantController extends Controller
             ]);
         }
 
-        $notification = [
+        return redirect()->route('all.menu')->with([
             'message' => 'Menu Updated Successfully',
             'alert-type' => 'success',
-        ];
-
-        return redirect()->route('all.menu')->with($notification);
+        ]);
     }
 
     public function DeleteMenu($id)
     {
         $menu = Menu::findOrFail($id);
-
-        // Delete image file
-        if ($menu->image && file_exists(public_path($menu->image))) {
-            unlink(public_path($menu->image));
-        }
-
         $menu->delete();
 
-        $notification = [
+        return redirect()->back()->with([
             'message' => 'Menu Deleted Successfully',
             'alert-type' => 'success',
-        ];
-
-        return redirect()->back()->with($notification);
+        ]);
     }
 
     ////////////////////////////////
@@ -154,42 +129,36 @@ class RestaurantController extends Controller
     }
 
     public function StoreProduct(Request $request)
-{
-    // dd("PRODUCT FORM HIT", $request->all(), $request->file('image'));
+    {
+        if ($request->city_id === "Select") {
+            $request->merge(['city_id' => null]);
+        }
 
-    if ($request->city_id === "Select") {
-        $request->merge(['city_id' => null]);
-    }
-
-    $request->validate([
-    'name' => 'required|string|max:255',
-    'category_id' => 'required|exists:categories,id',
-    'menu_id' => 'nullable|exists:menus,id',
-    'qty' => 'required|integer',
-    'size' => 'nullable|string|max:50',
-    'price' => 'required|numeric',
-    'discount_price' => 'nullable|numeric',
-    'image' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
-    'veg_nonveg' => 'nullable|in:veg,nonveg', // ✅ CORRECT
-]);
-
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'category_id' => 'required|exists:categories,id',
+            'menu_id' => 'nullable|exists:menus,id',
+            'qty' => 'required|integer',
+            'size' => 'nullable|string|max:50',
+            'price' => 'required|numeric',
+            'discount_price' => 'nullable|numeric',
+            'image' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
+            'veg_nonveg' => 'nullable|in:veg,nonveg',
+        ]);
 
         $pcode = IdGenerator::generate(['table' => 'products', 'field' => 'code', 'length' => 5, 'prefix' => 'PC']);
 
         if ($request->hasFile('image')) {
-            $image = $request->file('image');
-            $manager = new ImageManager(new Driver());
-            $ext = $image->getClientOriginalExtension() ?: 'webp';
-            $name_gen = hexdec(uniqid()) . '.' . $ext;
-            $img = $manager->read($image);
-            $img->resize(300, 300)->save(public_path('upload/product/' . $name_gen));
-            $save_url = 'upload/product/' . $name_gen;
+            $uploadedFile = Cloudinary::upload($request->file('image')->getRealPath(), [
+                'folder' => 'foodweb/products',
+                'transformation' => [['width' => 300, 'height' => 300, 'crop' => 'fill']]
+            ]);
+            $save_url = $uploadedFile->getSecurePath();
 
             Product::create([
                 'name' => $request->name,
                 'slug' => strtolower(str_replace(' ', '-', $request->name)),
                 'category_id' => $request->category_id,
-                // 'city_id' => $request->city_id,
                 'menu_id' => $request->menu_id,
                 'code' => $pcode,
                 'qty' => $request->qty,
@@ -206,19 +175,16 @@ class RestaurantController extends Controller
             ]);
         }
 
-        $notification = [
+        return redirect()->route('all.product')->with([
             'message' => 'Product Inserted Successfully',
             'alert-type' => 'success',
-        ];
-
-        return redirect()->route('all.product')->with($notification);
+        ]);
     }
 
     public function EditProduct($id)
     {
         $clientId = Auth::guard('client')->id();
         $category = Category::latest()->get();
-        // $city = City::latest()->get();
         $menu = Menu::where('client_id', $clientId)->latest()->get();
         $product = Product::findOrFail($id);
         return view('client.backend.menu.product.edit_product', compact('category', 'menu', 'product'));
@@ -229,37 +195,28 @@ class RestaurantController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'category_id' => 'required|exists:categories,id',
-            // 'city_id' => 'required|exists:cities,id',
             'menu_id' => 'required|exists:menus,id',
             'qty' => 'required|integer',
             'size' => 'nullable|string|max:50',
             'price' => 'required|numeric',
             'discount_price' => 'nullable|numeric',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'veg_nonveg' => $request->veg_nonveg ?? 'veg',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
+            'veg_nonveg' => 'nullable|in:veg,nonveg',
         ]);
 
         $product = Product::findOrFail($request->id);
 
         if ($request->hasFile('image')) {
-            // Delete old image
-            if ($product->image && file_exists(public_path($product->image))) {
-                unlink(public_path($product->image));
-            }
-
-            // Upload new image
-            $image = $request->file('image');
-            $manager = new ImageManager(new Driver());
-            $name_gen = hexdec(uniqid()) . '.' . $image->getClientOriginalExtension();
-            $img = $manager->read($image);
-            $img->resize(300, 300)->save(public_path('upload/product/' . $name_gen));
-            $save_url = 'upload/product/' . $name_gen;
+            $uploadedFile = Cloudinary::upload($request->file('image')->getRealPath(), [
+                'folder' => 'foodweb/products',
+                'transformation' => [['width' => 300, 'height' => 300, 'crop' => 'fill']]
+            ]);
+            $save_url = $uploadedFile->getSecurePath();
 
             $product->update([
                 'name' => $request->name,
                 'slug' => strtolower(str_replace(' ', '-', $request->name)),
                 'category_id' => $request->category_id,
-                // 'city_id' => $request->city_id,
                 'menu_id' => $request->menu_id,
                 'qty' => $request->qty,
                 'size' => $request->size,
@@ -267,6 +224,7 @@ class RestaurantController extends Controller
                 'discount_price' => $request->discount_price,
                 'most_populer' => $request->most_populer ?? 0,
                 'best_seller' => $request->best_seller ?? 0,
+                'veg_nonveg' => $request->veg_nonveg ?? 'veg',
                 'image' => $save_url,
             ]);
         } else {
@@ -274,7 +232,6 @@ class RestaurantController extends Controller
                 'name' => $request->name,
                 'slug' => strtolower(str_replace(' ', '-', $request->name)),
                 'category_id' => $request->category_id,
-                // 'city_id' => $request->city_id,
                 'menu_id' => $request->menu_id,
                 'qty' => $request->qty,
                 'size' => $request->size,
@@ -282,34 +239,25 @@ class RestaurantController extends Controller
                 'discount_price' => $request->discount_price,
                 'most_populer' => $request->most_populer ?? 0,
                 'best_seller' => $request->best_seller ?? 0,
+                'veg_nonveg' => $request->veg_nonveg ?? 'veg',
             ]);
         }
 
-        $notification = [
+        return redirect()->route('all.product')->with([
             'message' => 'Product Updated Successfully',
             'alert-type' => 'success',
-        ];
-
-        return redirect()->route('all.product')->with($notification);
+        ]);
     }
 
     public function DeleteProduct($id)
     {
         $product = Product::findOrFail($id);
-
-        // Delete image file
-        if ($product->image && file_exists(public_path($product->image))) {
-            unlink(public_path($product->image));
-        }
-
         $product->delete();
 
-        $notification = [
+        return redirect()->back()->with([
             'message' => 'Product Deleted Successfully',
             'alert-type' => 'success',
-        ];
-
-        return redirect()->back()->with($notification);
+        ]);
     }
 
     public function ChangeStatus(Request $request)
@@ -338,38 +286,33 @@ class RestaurantController extends Controller
     }
 
     public function StoreGallery(Request $request)
-{
-    $request->validate([
-        'gallery_img' => 'required',
-        'gallery_img.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:4096',
-    ]);
+    {
+        $request->validate([
+            'gallery_img' => 'required',
+            'gallery_img.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:4096',
+        ]);
 
-    if (!$request->hasFile('gallery_img')) {
-        return back()->with('error', 'Please select at least one image');
-    }
+        if (!$request->hasFile('gallery_img')) {
+            return back()->with('error', 'Please select at least one image');
+        }
 
-    foreach ($request->file('gallery_img') as $image) {
+        foreach ($request->file('gallery_img') as $image) {
+            $uploadedFile = Cloudinary::upload($image->getRealPath(), [
+                'folder' => 'foodweb/gallery',
+                'transformation' => [['width' => 800, 'height' => 800, 'crop' => 'fill']]
+            ]);
 
-        $manager = new ImageManager(new Driver());
-        $ext = $image->getClientOriginalExtension() ?: 'webp';
-        $name_gen = hexdec(uniqid()) . '.' . $ext;
+            Gallery::create([
+                'client_id' => Auth::guard('client')->id(),
+                'gallery_img' => $uploadedFile->getSecurePath(),
+            ]);
+        }
 
-        $manager->read($image)
-            ->resize(800, 800)
-            ->save(public_path('upload/gallery/' . $name_gen));
-
-        Gallery::create([
-            'client_id' => Auth::guard('client')->id(),
-            'gallery_img' => 'upload/gallery/' . $name_gen,
+        return redirect()->route('all.gallery')->with([
+            'message' => 'Gallery Images Inserted Successfully',
+            'alert-type' => 'success',
         ]);
     }
-
-    return redirect()->route('all.gallery')->with([
-        'message' => 'Gallery Images Inserted Successfully',
-        'alert-type' => 'success',
-    ]);
-}
-
 
     public function EditGallery($id)
     {
@@ -378,56 +321,38 @@ class RestaurantController extends Controller
     }
 
     public function UpdateGallery(Request $request)
-{
-    $request->validate([
-        'gallery_img' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
-    ]);
+    {
+        $request->validate([
+            'gallery_img' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
+        ]);
 
-    $gallery = Gallery::findOrFail($request->id);
+        $gallery = Gallery::findOrFail($request->id);
 
-    if ($request->hasFile('gallery_img')) {
+        if ($request->hasFile('gallery_img')) {
+            $uploadedFile = Cloudinary::upload($request->file('gallery_img')->getRealPath(), [
+                'folder' => 'foodweb/gallery',
+                'transformation' => [['width' => 800, 'height' => 800, 'crop' => 'fill']]
+            ]);
 
-        if ($gallery->gallery_img && file_exists(public_path($gallery->gallery_img))) {
-            unlink(public_path($gallery->gallery_img));
+            $gallery->update([
+                'gallery_img' => $uploadedFile->getSecurePath(),
+            ]);
         }
 
-        $image = $request->file('gallery_img');
-        $manager = new ImageManager(new Driver());
-        $ext = $image->getClientOriginalExtension() ?: 'webp';
-        $name_gen = hexdec(uniqid()) . '.' . $ext;
-
-        $manager->read($image)
-            ->resize(800, 800)
-            ->save(public_path('upload/gallery/' . $name_gen));
-
-        $gallery->update([
-            'gallery_img' => 'upload/gallery/' . $name_gen,
+        return redirect()->route('all.gallery')->with([
+            'message' => 'Gallery Image Updated Successfully',
+            'alert-type' => 'success',
         ]);
     }
-
-    return redirect()->route('all.gallery')->with([
-        'message' => 'Gallery Image Updated Successfully',
-        'alert-type' => 'success',
-    ]);
-}
-
 
     public function DeleteGallery($id)
     {
         $gallery = Gallery::findOrFail($id);
-
-        // Delete image file
-        if ($gallery->gallery_img && file_exists(public_path($gallery->gallery_img))) {
-            unlink(public_path($gallery->gallery_img));
-        }
-
         $gallery->delete();
 
-        $notification = [
+        return redirect()->back()->with([
             'message' => 'Gallery Image Deleted Successfully',
             'alert-type' => 'success',
-        ];
-
-        return redirect()->back()->with($notification);
+        ]);
     }
 }

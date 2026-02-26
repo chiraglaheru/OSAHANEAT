@@ -51,9 +51,9 @@
          <div id="collapseOne" class="collapse show" aria-labelledby="headingOne" data-parent="#accordion">
             <div class="filters-card-body card-shop-filters">
                @foreach ($categories as $category)
-               @php
-                  $categoryProductCount = $products->where('category_id',$category->id)->count();
-               @endphp
+              @php
+    $categoryProductCount = $allProducts->where('category_id', $category->id)->count();
+@endphp
                <div class="custom-control custom-checkbox">
                   <input type="checkbox" class="custom-control-input filter-checkbox" id="category-{{$category->id}}" data-type="category" data-id="{{$category->id}}">
                   <label class="custom-control-label" for="category-{{$category->id}}">{{$category->category_name}} <small class="text-black-50">({{$categoryProductCount}})</small>
@@ -91,8 +91,8 @@
          <div class="filters-card-body card-shop-filters">
             @foreach ($cities as $city)
             @php
-               $cityProductCount = $products->where('city_id',$city->id)->count();
-            @endphp
+    $cityProductCount = $allProducts->where('city_id', $city->id)->count();
+@endphp
             <div class="custom-control custom-checkbox">
                <input type="checkbox" class="custom-control-input filter-checkbox" id="city-{{$city->id}}" data-type="city" data-id="{{$city->id}}">
                <label class="custom-control-label" for="city-{{$city->id}}">{{$city->city_name}} <small class="text-black-50">({{$cityProductCount}})</small>
@@ -128,8 +128,8 @@ $menus = App\Models\Menu::orderBy('id','desc')->limit(10)->get();
       <div class="filters-card-body card-shop-filters">
          @foreach ($menus as $menu)
          @php
-            $menuProductCount = $products->where('menu_id',$menu->id)->count();
-         @endphp
+    $menuProductCount = $allProducts->where('menu_id', $menu->id)->count();
+@endphp
          <div class="custom-control custom-checkbox">
             <input type="checkbox" class="custom-control-input filter-checkbox" id="menu-{{$menu->id}}" data-type="menu" data-id="{{$menu->id}}">
             <label class="custom-control-label" for="menu-{{$menu->id}}">{{$menu->menu_name}} <small class="text-black-50">({{$menuProductCount}})</small>

@@ -34,7 +34,13 @@ $coupons = App\Models\Coupon::where('client_id',$client->id)->where('status','1'
                 <div class="restaurant-detailed-header-right text-right">
                    <button class="btn btn-success" type="button"><i class="icofont-clock-time"></i> 25–35 min
                    </button>
-                   <h6 class="text-white mb-0 restaurant-detailed-ratings"><span class="generator-bg rounded text-white"><i class="icofont-star"></i> 3.1</span> 23 Ratings  <i class="ml-3 icofont-speech-comments"></i> 91 reviews</h6>
+                   <h6 class="text-white mb-0 restaurant-detailed-ratings">
+    <span class="generator-bg rounded text-white">
+        <i class="icofont-star"></i> {{ $roundedAverageRating }}
+    </span>
+    {{ $totalReviews }} Ratings
+    <i class="ml-3 icofont-speech-comments"></i> {{ $totalReviews }} reviews
+</h6>
                 </div>
              </div>
           </div>
@@ -120,7 +126,7 @@ $coupons = App\Models\Coupon::where('client_id',$client->id)->where('status','1'
         <div class="col-md-4 col-sm-6 mb-4">
         <div class="list-card bg-white h-100 rounded overflow-hidden position-relative shadow-sm">
             <div class="list-card-image">
-                <div class="star position-absolute"><span class="badge badge-success"><i class="icofont-star"></i> 3.1 (300+)</span></div>
+                <div class="star position-absolute"><span class="badge badge-success"><i class="icofont-star"></i> {{ $roundedAverageRating }} ({{ $totalReviews }}+)</span></div>
                 <div class="favourite-heart text-danger position-absolute"><a href="#"><i class="icofont-heart"></i></a></div>
                 <div class="member-plan position-absolute"><span class="badge badge-dark">Promoted</span></div>
                 <a href="#">
@@ -159,20 +165,25 @@ $coupons = App\Models\Coupon::where('client_id',$client->id)->where('status','1'
         <div class="col-md-12">
         <div class="bg-white rounded border shadow-sm mb-4">
 
-            @foreach ($menu->products as $product)
-            <div class="menu-list p-3 border-bottom">
-                <a class="btn btn-outline-secondary btn-sm  float-right" href="{{ route('add_to_cart',$product->id)}}">ADD</a>
+           @foreach ($menu->products as $product)
+<div class="menu-list p-3 border-bottom">
+    <a class="btn btn-outline-secondary btn-sm float-right" href="{{ route('add_to_cart',$product->id)}}">ADD</a>
 
-                <div class="media">
-                    <img class="mr-3 rounded-pill" src="{{ asset($product->image) }}" alt="Generic placeholder image">
-                    <div class="media-body">
-                    <h6 class="mb-1">{{$product->name}}</h6>
-                    <p class="text-gray mb-0">{{ currency($product->price) }} ({{ $product->size ?? '' }} cm)</p>
+    @if($product->veg_nonveg === 'veg')
+        <span class="badge badge-success float-right mr-2">🟢 Veg</span>
+    @else
+        <span class="badge badge-danger float-right mr-2">🔴 Non-Veg</span>
+    @endif
 
-                    </div>
-                </div>
-            </div>
-            @endforeach
+    <div class="media">
+        <img class="mr-3 rounded-pill" src="{{ asset($product->image) }}" alt="Generic placeholder image">
+        <div class="media-body">
+            <h6 class="mb-1">{{$product->name}}</h6>
+            <p class="text-gray mb-0">{{ currency($product->price) }} ({{ $product->size ?? '' }} cm)</p>
+        </div>
+    </div>
+</div>
+@endforeach
 
         </div>
         </div>

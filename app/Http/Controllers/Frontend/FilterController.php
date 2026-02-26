@@ -11,10 +11,23 @@ use Illuminate\Support\Facades\Log;
 
 class FilterController extends Controller
 {
-    public function ListRestaurant(){
-        $products = Product::all();
-        return view('frontend.layouts.list_restaurant',compact('products'));
-    } 
+    public function ListRestaurant(Request $request){
+    $search = $request->input('search');
+
+    // Always get ALL products for counts
+    $allProducts = Product::all();
+
+    // Filter products for display
+    $products = Product::query();
+
+    if ($search) {
+        $products->where('name', 'LIKE', '%' . $search . '%');
+    }
+
+    $products = $products->get();
+
+    return view('frontend.layouts.list_restaurant', compact('products', 'search', 'allProducts'));
+}
     //End Method
 
     public function FilterProducts(Request $request){

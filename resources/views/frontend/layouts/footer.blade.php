@@ -82,7 +82,7 @@
 
 <footer class="pt-4 pb-4 text-center">
    <div class="container">
-      <p class="mt-0 mb-0">© Copyright 2025 Osahan Eat. Made by OsahanEat</p>
+      <p class="mt-0 mb-0">© Copyright 2026 Osahan Eat. Made by OsahanEat</p>
       <div class="mt-3" style="font-size: 13px;">
          <span class="text-muted">Are you an Admin?</span>
          <a href="{{ route('admin.login') }}" class="text-danger font-weight-bold ml-1">Login here</a>

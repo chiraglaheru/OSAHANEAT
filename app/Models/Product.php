@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class Product extends Model
 {
     use HasFactory;
-    protected $guarded = [];
+    protected $guarded = [];  // ✅ This already allows ALL fields including veg_nonveg
 
     public function menu(){
         return $this->belongsTo(Menu::class, 'menu_id','id');
@@ -21,7 +21,4 @@ class Product extends Model
     public function city(){
         return $this->belongsTo(City::class, 'city_id','id');
     }
-
-
-
 }

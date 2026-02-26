@@ -14,14 +14,21 @@
                       <div class="col-lg-3 col-md-3 col-sm-12 form-group">
                          <div class="location-dropdown">
                             <i class="icofont-location-arrow"></i>
-                            <select class="custom-select form-control-lg">
-                               <option> Quick Searches </option>
-                               <option> Breakfast </option>
-                               <option> Lunch </option>
-                               <option> Dinner </option>
-                               <option> Cafés </option>
-                               <option> Delivery </option>
-                            </select>
+                           <select class="custom-select form-control-lg" onchange="quickSearch(this.value)">
+    <option value="">Quick Searches</option>
+    <option value="Breakfast">Breakfast</option>
+    <option value="Lunch">Lunch</option>
+    <option value="Dinner">Dinner</option>
+    <option value="Cafés">Cafés</option>
+    <option value="Delivery">Delivery</option>
+</select>
+<script>
+function quickSearch(value) {
+    if (value) {
+        window.location.href = '/list/restaurant?search=' + encodeURIComponent(value);
+    }
+}
+</script>
                          </div>
                       </div>
                       <div class="col-lg-7 col-md-7 col-sm-12 form-group">
@@ -72,32 +79,42 @@ function getUserLocation(event) {
         return;
     }
 
-    document.getElementById("location-input").value = "Locating you...";
+    const input = document.getElementById("location-input");
+    input.value = "Locating you...";
 
     navigator.geolocation.getCurrentPosition(function(position) {
         let lat = position.coords.latitude;
         let lng = position.coords.longitude;
 
+        // Try reverse geocode, fall back to coords if it fails
         fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`)
-            .then(function(response) { return response.json(); })
-            .then(function(data) {
+            .then(res => res.json())
+            .then(data => {
                 let address = [
                     data.locality,
                     data.principalSubdivision,
                     data.countryName
                 ].filter(Boolean).join(', ');
-                document.getElementById("location-input").value = address || "Location found";
+                input.value = address || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
             })
-            .catch(function() {
-                document.getElementById("location-input").value = lat.toFixed(5) + ', ' + lng.toFixed(5);
+            .catch(() => {
+                // API blocked or failed — just show coordinates
+                input.value = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
             });
 
-    }, function() {
-        document.getElementById("location-input").value = "";
-        alert("Please allow location access in your browser.");
+    }, function(error) {
+        input.value = "";
+        // Show specific error instead of generic alert
+        const errors = {
+            1: "Location access denied. Please allow it in browser settings.",
+            2: "Location unavailable. Try entering manually.",
+            3: "Location request timed out. Try again."
+        };
+        alert(errors[error.code] || "Could not get location.");
     }, {
-        timeout: 10000,
-        maximumAge: 60000
+        timeout: 30000,
+        maximumAge: 30000,
+        enableHighAccuracy: false  // ← set to false, faster and more reliable on localhost
     });
 }
 </script>

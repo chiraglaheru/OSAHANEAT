@@ -162,16 +162,16 @@ class RestaurantController extends Controller
     }
 
     $request->validate([
-        'name' => 'required|string|max:255',
-        'category_id' => 'required|exists:categories,id',
-        // 'city_id' => 'nullable|exists:cities,id',
-        'menu_id' => 'nullable|exists:menus,id',
-        'qty' => 'required|integer',
-        'size' => 'nullable|string|max:50',
-        'price' => 'required|numeric',
-        'discount_price' => 'nullable|numeric',
-        'image' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
-    ]);
+    'name' => 'required|string|max:255',
+    'category_id' => 'required|exists:categories,id',
+    'menu_id' => 'nullable|exists:menus,id',
+    'qty' => 'required|integer',
+    'size' => 'nullable|string|max:50',
+    'price' => 'required|numeric',
+    'discount_price' => 'nullable|numeric',
+    'image' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
+    'veg_nonveg' => 'nullable|in:veg,nonveg', // ✅ CORRECT
+]);
 
 
         $pcode = IdGenerator::generate(['table' => 'products', 'field' => 'code', 'length' => 5, 'prefix' => 'PC']);
@@ -202,6 +202,7 @@ class RestaurantController extends Controller
                 'status' => 1,
                 'created_at' => Carbon::now(),
                 'image' => $save_url,
+                'veg_nonveg' => $request->veg_nonveg ?? 'veg',
             ]);
         }
 
@@ -235,6 +236,7 @@ class RestaurantController extends Controller
             'price' => 'required|numeric',
             'discount_price' => 'nullable|numeric',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'veg_nonveg' => $request->veg_nonveg ?? 'veg',
         ]);
 
         $product = Product::findOrFail($request->id);

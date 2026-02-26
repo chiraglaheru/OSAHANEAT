@@ -7,18 +7,17 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use App\Models\Client;
 use App\Models\City;
+use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 
 class ClientController extends Controller
 {
     public function ClientLogin(){
         return view('client.client_login');
    }
-   // End Method
 
    public function ClientRegister(){
-    return view('client.client_register');
-}
-// End Method
+        return view('client.client_register');
+    }
 
     public function ClientRegisterSubmit(Request $request){
         $request->validate([
@@ -41,131 +40,87 @@ class ClientController extends Controller
             'alert-type' => 'success'
         );
         return redirect()->route('client.login')->with($notification);
-
     }
-    // End Method
 
-//     public function ClientLoginSubmit(Request $request){
-//     $request->validate([
-//         'email' => 'required|email',
-//         'password' => 'required',
-//     ]);
-
-//     $credentials = $request->only('email', 'password');
-
-//     if (Auth::guard('client')->attempt($credentials)) {
-
-//         // 🔥 CRITICAL FIX: keeps client logged in for all routes
-//         $request->session()->regenerate();
-
-//         return redirect()->route('client.dashboard')
-//             ->with('success','Login Successfully');
-//     }
-
-//     return redirect()->route('client.login')
-//         ->with('error','Invalid Credentials');
-// }
     public function ClientLoginSubmit(Request $request)
-{
-    $credentials = $request->only('email', 'password');
+    {
+        $credentials = $request->only('email', 'password');
 
-    if (Auth::guard('client')->attempt($credentials)) {
+        if (Auth::guard('client')->attempt($credentials)) {
+            Auth::shouldUse('client');
+            $request->session()->regenerate();
+            return redirect()->route('client.dashboard')->with('success', 'Login Successfully');
+        }
 
-        // FORCE the guard to stay active
-        Auth::shouldUse('client');
-
-        // Regenerate session
-        $request->session()->regenerate();
-
-        return redirect()->route('client.dashboard')
-            ->with('success', 'Login Successfully');
+        return redirect()->route('client.login')->with('error', 'Invalid Credentials');
     }
-
-    return redirect()->route('client.login')
-        ->with('error', 'Invalid Credentials');
-}
-
-
-
-// End Method
 
     public function ClientDashboard(){
         return view('client.index');
     }
-    // End Method
 
     public function ClientLogout(){
         Auth::guard('client')->logout();
         return redirect()->route('client.login')->with('success','Logout Success');
     }
-    // End Method
 
     public function ClientProfile(){
         $city = City::latest()->get();
         $id = Auth::guard('client')->id();
         $profileData = Client::find($id);
         return view('client.client_profile',compact('profileData','city'));
-     }
-      // End Method
-
-      public function ClientProfileStore(Request $request){
-        $id = Auth::guard('client')->id();
-        $data = Client::find($id);
-
-        $data->name = $request->name;
-        $data->email = $request->email;
-        $data->phone = $request->phone;
-        $data->address = $request->address;
-        $data->city_id = $request->city_id;
-        $data->shop_info = $request->shop_info;
-
-        $oldPhotoPath = $data->photo;
-
-        if ($request->hasFile('photo')) {
-           $file = $request->file('photo');
-           $filename = time().'.'.$file->getClientOriginalExtension();
-           $file->move(public_path('upload/client_images'),$filename);
-           $data->photo = $filename;
-
-           if ($oldPhotoPath && $oldPhotoPath !== $filename) {
-             $this->deleteOldImage($oldPhotoPath);
-           }
-
-        }
-
-        if ($request->hasFile('cover_photo')) {
-            $file1 = $request->file('cover_photo');
-            $filename1 = time().'.'.$file1->getClientOriginalExtension();
-            $file1->move(public_path('upload/client_images'),$filename1);
-            $data->cover_photo = $filename1;
-         }
-
-        $data->save();
-
-        $notification = array(
-            'message' => 'Profile Updated Successfully',
-            'alert-type' => 'success'
-        );
-
-        return redirect()->back()->with($notification);
     }
-     // End Method
-     private function deleteOldImage(string $oldPhotoPath): void {
-        $fullPath = public_path('upload/client_images/'.$oldPhotoPath);
-        if (file_exists($fullPath)) {
-            unlink($fullPath);
-        }
-     }
-     // End Private Method
 
-     public function ClientChangePassword(){
+    public function ClientProfileStore(Request $request){
+        try {
+            $id = Auth::guard('client')->id();
+            $data = Client::find($id);
+
+            $data->name = $request->name;
+            $data->email = $request->email;
+            $data->phone = $request->phone;
+            $data->address = $request->address;
+            $data->city_id = $request->city_id;
+            $data->shop_info = $request->shop_info;
+
+            if ($request->hasFile('photo')) {
+                $uploadedFile = Cloudinary::upload($request->file('photo')->getRealPath(), [
+                    'folder' => 'foodweb/clients',
+                    'transformation' => [['width' => 300, 'height' => 300, 'crop' => 'fill']]
+                ]);
+                $data->photo = $uploadedFile->getSecurePath();
+            }
+
+            if ($request->hasFile('cover_photo')) {
+                $uploadedFile = Cloudinary::upload($request->file('cover_photo')->getRealPath(), [
+                    'folder' => 'foodweb/clients',
+                    'transformation' => [['width' => 1200, 'height' => 400, 'crop' => 'fill']]
+                ]);
+                $data->cover_photo = $uploadedFile->getSecurePath();
+            }
+
+            $data->save();
+
+            return redirect()->back()->with([
+                'message' => 'Profile Updated Successfully',
+                'alert-type' => 'success'
+            ]);
+
+        } catch (\Exception $e) {
+            return redirect()->back()->with([
+                'message' => 'Error: ' . $e->getMessage(),
+                'alert-type' => 'error'
+            ]);
+        }
+    }
+
+    public function ClientChangePassword(){
         $id = Auth::guard('client')->id();
         $profileData = Client::find($id);
         return view('client.client_change_Password',compact('profileData'));
-     }
-      // End Method
+    }
 
-      public function ClientPasswordUpdate(Request $request){
+    public function ClientPasswordUpdate(Request $request){
         $client = Auth::guard('client')->user();
         $request->validate([
             'old_password' => 'required',
@@ -173,24 +128,19 @@ class ClientController extends Controller
         ]);
 
         if (!Hash::check($request->old_password,$client->password)) {
-            $notification = array(
+            return back()->with([
                 'message' => 'Old Password Does not Match!',
                 'alert-type' => 'error'
-            );
-            return back()->with($notification);
+            ]);
         }
-        /// Update the new password
+
         Client::whereId($client->id)->update([
             'password' => Hash::make($request->new_password)
         ]);
 
-                $notification = array(
-                'message' => 'Password Change Successfully',
-                'alert-type' => 'success'
-            );
-            return back()->with($notification);
-     }
-      // End Method
-
-
+        return back()->with([
+            'message' => 'Password Change Successfully',
+            'alert-type' => 'success'
+        ]);
+    }
 }

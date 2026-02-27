@@ -79,10 +79,8 @@ class CartController extends Controller
 
     public function ApplyCoupon(Request $request){
 
-    // FIX: clean input (remove spaces + lowercase)
     $enteredCoupon = strtolower(trim($request->coupon));
 
-    // FIX: search coupon properly
     $coupon = Coupon::whereRaw('LOWER(TRIM(coupon_name)) = ?', [$enteredCoupon])
                     ->whereDate('validity', '>=', Carbon::today())
                     ->first();
@@ -172,3 +170,7 @@ class CartController extends Controller
 
 
 }
+
+
+
+

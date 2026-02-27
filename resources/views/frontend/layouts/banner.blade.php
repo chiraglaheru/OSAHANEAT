@@ -14,63 +14,74 @@
                       <div class="col-lg-3 col-md-3 col-sm-12 form-group">
                          <div class="location-dropdown">
                             <i class="icofont-location-arrow"></i>
-                           <select class="custom-select form-control-lg" onchange="quickSearch(this.value)">
-    <option value="">Quick Searches</option>
-    <option value="Breakfast">Breakfast</option>
-    <option value="Lunch">Lunch</option>
-    <option value="Dinner">Dinner</option>
-    <option value="Cafés">Cafés</option>
-    <option value="Delivery">Delivery</option>
-</select>
-<script>
-function quickSearch(value) {
-    if (value) {
-        window.location.href = '/list/restaurant?search=' + encodeURIComponent(value);
-    }
-}
-</script>
+                            <select class="custom-select form-control-lg" onchange="quickSearch(this.value)">
+                                <option value="">Quick Searches</option>
+                                <option value="Breakfast">Breakfast</option>
+                                <option value="Lunch">Lunch</option>
+                                <option value="Dinner">Dinner</option>
+                                <option value="Cafés">Cafés</option>
+                                <option value="Delivery">Delivery</option>
+                            </select>
                          </div>
                       </div>
                       <div class="col-lg-7 col-md-7 col-sm-12 form-group">
-    <input id="location-input" type="text" placeholder="Enter your Dine-in location" class="form-control form-control-lg">
-    <a class="locate-me" href="#" onclick="getUserLocation(event)">
-        <i class="icofont-ui-pointer"></i> Locate Me
-    </a>
-</div>
-
+                         <input id="location-input" type="text" placeholder="Search Restaurants" class="form-control form-control-lg">
+                         <a class="locate-me" href="#" onclick="getUserLocation(event)">
+                             <i class="icofont-ui-pointer"></i> Locate Me
+                         </a>
+                      </div>
                       <div class="col-lg-2 col-md-2 col-sm-12 form-group">
-                         <a href="listing.html" class="btn btn-primary btn-block btn-lg btn-gradient">Search</a>
+                         <a href="#" onclick="doSearch()" class="btn btn-primary btn-block btn-lg btn-gradient">Search</a>
                       </div>
                    </div>
                 </form>
              </div>
              <h6 class="mt-4 text-shadow text-white font-weight-normal">E.g. Beverages, Pizzas, Chinese, Bakery, Indian...</h6>
              <div class="owl-carousel owl-carousel-category owl-theme">
-    @php
-       $products = App\Models\Product::latest()->limit(8)->get();
-    @endphp
-              @foreach ($products  as $product)
-              <div class="item">
-                   <div class="osahan-category-item">
-                      <a href="#">
-                         <img class="img-fluid" src="{{ asset($product->image ) }}" alt="">
-                         <h6>{{ Str::limit($product->name, 8)  }}</h6>
-                         <p>{{ currency($product->price) }}</p>
-                      </a>
-                   </div>
-                </div>
+                @php
+                   $products = App\Models\Product::latest()->limit(8)->get();
+                @endphp
+                @foreach ($products as $product)
+                <div class="item">
+                     <div class="osahan-category-item">
+                        <a href="#">
+                           <img class="img-fluid" src="{{ asset($product->image) }}" alt="">
+                           <h6>{{ Str::limit($product->name, 8) }}</h6>
+                           <p>{{ currency($product->price) }}</p>
+                        </a>
+                     </div>
+                  </div>
                 @endforeach
-
-
-
              </div>
           </div>
-
        </div>
     </div>
  </section>
 
- <script>
+<script>
+function quickSearch(value) {
+    if (value) {
+        window.location.href = '/list/restaurant?search=' + encodeURIComponent(value);
+    }
+}
+
+function doSearch() {
+    var query = document.getElementById('location-input').value.trim();
+    if (query) {
+        window.location.href = '/list/restaurant?search=' + encodeURIComponent(query);
+    } else {
+        alert('Please enter a location or restaurant name to search.');
+    }
+}
+
+document.getElementById('location-input').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        doSearch();
+    }
+});
+</script>
+
+<script>
 function getUserLocation(event) {
     event.preventDefault();
 
@@ -86,7 +97,6 @@ function getUserLocation(event) {
         let lat = position.coords.latitude;
         let lng = position.coords.longitude;
 
-        // Try reverse geocode, fall back to coords if it fails
         fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`)
             .then(res => res.json())
             .then(data => {
@@ -98,13 +108,11 @@ function getUserLocation(event) {
                 input.value = address || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
             })
             .catch(() => {
-                // API blocked or failed — just show coordinates
                 input.value = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
             });
 
     }, function(error) {
         input.value = "";
-        // Show specific error instead of generic alert
         const errors = {
             1: "Location access denied. Please allow it in browser settings.",
             2: "Location unavailable. Try entering manually.",
@@ -114,7 +122,7 @@ function getUserLocation(event) {
     }, {
         timeout: 30000,
         maximumAge: 30000,
-        enableHighAccuracy: false  // ← set to false, faster and more reliable on localhost
+        enableHighAccuracy: false
     });
 }
 </script>

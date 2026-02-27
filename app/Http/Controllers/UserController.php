@@ -6,57 +6,65 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
-use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 
 class UserController extends Controller
 {
     public function Index(){
         return view('frontend.index');
-    }
+    } // End Method
 
     public function ProfileStore(Request $request){
-        try {
-            $id = Auth::user()->id;
-            $data = User::find($id);
+        $id = Auth::user()->id;
+        $data = User::find($id);
 
-            $data->name = $request->name;
-            $data->email = $request->email;
-            $data->phone = $request->phone;
-            $data->address = $request->address;
+        $data->name = $request->name;
+        $data->email = $request->email;
+        $data->phone = $request->phone;
+        $data->address = $request->address;
 
-            if ($request->hasFile('photo')) {
-                $uploadedFile = Cloudinary::upload($request->file('photo')->getRealPath(), [
-                    'folder' => 'foodweb/users',
-                    'transformation' => [['width' => 300, 'height' => 300, 'crop' => 'fill']]
-                ]);
-                $data->photo = $uploadedFile->getSecurePath();
-            }
+        $oldPhotoPath = $data->photo;
 
-            $data->save();
+        if ($request->hasFile('photo')) {
+           $file = $request->file('photo');
+           $filename = time().'.'.$file->getClientOriginalExtension();
+           $file->move(public_path('upload/user_images'),$filename);
+           $data->photo = $filename;
 
-            return redirect()->back()->with([
-                'message' => 'Profile Updated Successfully',
-                'alert-type' => 'success'
-            ]);
+           if ($oldPhotoPath && $oldPhotoPath !== $filename) {
+             $this->deleteOldImage($oldPhotoPath);
+           }
 
-        } catch (\Exception $e) {
-            return redirect()->back()->with([
-                'message' => 'Error: ' . $e->getMessage(),
-                'alert-type' => 'error'
-            ]);
         }
-    }
+        $data->save();
 
-    public function UserLogout(){
+        $notification = array(
+            'message' => 'Profile Updated Successfully',
+            'alert-type' => 'success'
+        );
+
+        return redirect()->back()->with($notification);
+    }
+     // End Method
+     private function deleteOldImage(string $oldPhotoPath): void {
+        $fullPath = public_path('upload/user_images/'.$oldPhotoPath);
+        if (file_exists($fullPath)) {
+            unlink($fullPath);
+        }
+     }
+     // End Private Method
+
+     public function UserLogout(){
         Auth::guard('web')->logout();
         return redirect()->route('login')->with('success','Logout Successfully');
-    }
+     }
+    // End Method
 
     public function ChangePassword(){
         return view('frontend.dashboard.change_password');
     }
+     // End Method
 
-    public function UserPasswordUpdate(Request $request){
+     public function UserPasswordUpdate(Request $request){
         $user = Auth::guard('web')->user();
         $request->validate([
             'old_password' => 'required',
@@ -64,19 +72,24 @@ class UserController extends Controller
         ]);
 
         if (!Hash::check($request->old_password,$user->password)) {
-            return back()->with([
+            $notification = array(
                 'message' => 'Old Password Does not Match!',
                 'alert-type' => 'error'
-            ]);
+            );
+            return back()->with($notification);
         }
-
+        /// Update the new password
         User::whereId($user->id)->update([
             'password' => Hash::make($request->new_password)
         ]);
 
-        return back()->with([
-            'message' => 'Password Change Successfully',
-            'alert-type' => 'success'
-        ]);
-    }
+                $notification = array(
+                'message' => 'Password Change Successfully',
+                'alert-type' => 'success'
+            );
+            return back()->with($notification);
+     }
+      // End Method
+
+
 }

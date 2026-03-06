@@ -186,7 +186,7 @@
                     </td>
                     <td class="col-md-2">
                         <label>
-                            {{ $item->price }} <br> Total = $ {{ $item->price * $item->qty }}
+                           {{ $item->price }} <br> Total = ₹ {{ $item->price * $item->qty }}
                         </label>
                     </td>
                 </tr>
@@ -194,7 +194,7 @@
                             </tbody>
                         </table>
                 <div>
-                    <h4>Total Price: $ {{ $totalPrice }}</h4>
+                    <h4>Total Price: ₹ {{ $totalPrice }}</h4>
                 </div>
 
                     </div>

@@ -26,13 +26,14 @@ class CartController extends Controller
         } else {
            $priceToShow = isset($products->discount_price) ? $products->discount_price : $products->price;
            $cart[$id] = [
-            'id' => $id,
-            'name' => $products->name,
-            'image' => $products->image,
-            'price' => $priceToShow,
-            'client_id' => $products->client_id,
-            'quantity' => 1
-           ];
+    'id' => $id,
+    'name' => $products->name,
+    'image' => $products->image,
+    'price' => $priceToShow,
+    'client_id' => $products->client_id,
+    'quantity' => 1,
+    'veg_nonveg' => $products->veg_nonveg,
+];
         }
         session()->put('cart',$cart);
 

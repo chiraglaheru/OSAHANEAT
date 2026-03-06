@@ -46,7 +46,7 @@
                                         <td>{{ $key + 1 }}</td>
                                         <td>{{ $order ? $order->order_date : 'N/A' }}</td>
                                         <td>{{ $order ? $order->invoice_no : 'N/A' }}</td>
-                                        <td>{{ currency( $order ? $order->amount : '0.00' }}</td>
+                                        <td>₹{{ $order ? $order->amount : '0.00' }}</td>
                                         <td>{{ $order ? $order->payment_method : 'N/A' }}</td>
                                         <td>
                                             @if ($order)

@@ -396,44 +396,66 @@ $coupons = App\Models\Coupon::where('client_id',$client->id)->where('status','1'
      @else
 
   <style>
-   .star-rating label {
+   .star-rating-input {
       display: inline-flex;
-      margin-right: 5px;
+      gap: 5px;
+   }
+   .star-rating-input label {
       cursor: pointer;
+      color: #ccc;
+      transition: color 0.2s;
    }
-   .star-rating input[type="radio"]{
-      display: none;
-   }
-   .star-rating input[type="radio"]:checked + .star-icon{
+   .star-rating-input label.selected i,
+   .star-rating-input label.hovered i {
       color: #dd646e;
    }
-  </style>
+</style>
 
       <h5 class="mb-4">Leave Comment</h5>
       <p class="mb-2">Rate the Place</p>
       <form method="post" action="{{ route('store.review') }}">
          @csrf
          <input type="hidden" name="client_id" value="{{ $client->id }}">
+         <input type="hidden" name="rating" id="rating-value" value="">
 
       <div class="mb-4">
-         <span class="star-rating">
-            <label for="rating-1">
-            <input type="radio" name="rating" id="rating-1" value="1" hidden><i class="icofont-ui-rating icofont-2x star-icon"></i></label>
-
-            <label for="rating-2">
-            <input type="radio" name="rating" id="rating-2" value="2" hidden><i class="icofont-ui-rating icofont-2x star-icon"></i></label>
-            <label for="rating-3">
-            <input type="radio" name="rating" id="rating-3" value="3" hidden><i class="icofont-ui-rating icofont-2x star-icon"></i></label>
-
-            <label for="rating-4">
-            <input type="radio" name="rating" id="rating-4" value="4" hidden><i class="icofont-ui-rating icofont-2x star-icon"></i></label>
-
-            <label for="rating-5">
-            <input type="radio" name="rating" id="rating-5" value="5" hidden><i class="icofont-ui-rating icofont-2x star-icon"></i></label>
-
-
+         <span class="star-rating-input" id="star-rating-input">
+            <label data-value="1"><i class="icofont-ui-rating icofont-2x"></i></label>
+            <label data-value="2"><i class="icofont-ui-rating icofont-2x"></i></label>
+            <label data-value="3"><i class="icofont-ui-rating icofont-2x"></i></label>
+            <label data-value="4"><i class="icofont-ui-rating icofont-2x"></i></label>
+            <label data-value="5"><i class="icofont-ui-rating icofont-2x"></i></label>
          </span>
       </div>
+
+<script>
+(function() {
+   const stars = document.querySelectorAll('#star-rating-input label');
+   const ratingInput = document.getElementById('rating-value');
+
+   stars.forEach(function(star, index) {
+      // Hover effect
+      star.addEventListener('mouseenter', function() {
+         stars.forEach(function(s, i) {
+            s.classList.toggle('hovered', i <= index);
+         });
+      });
+
+      // Mouse leave
+      star.addEventListener('mouseleave', function() {
+         stars.forEach(function(s) { s.classList.remove('hovered'); });
+      });
+
+      // Click to select
+      star.addEventListener('click', function() {
+         ratingInput.value = index + 1;
+         stars.forEach(function(s, i) {
+            s.classList.toggle('selected', i <= index);
+         });
+      });
+   });
+})();
+</script>
 
          <div class="form-group">
             <label>Your Comment</label>
@@ -499,11 +521,17 @@ $coupons = App\Models\Coupon::where('client_id',$client->id)->where('status','1'
          <button class="btn btn-outline-danger btn-sm right remove" data-id="{{ $id }}"> <i class="icofont-trash"></i> </button>
          </span>
          <div class="media">
-            <div class="mr-2"><img src="{{ asset($details['image']) }}"  width="25px" ></div>
-            <div class="media-body">
-               <p class="mt-1 mb-0 text-black">{{ $details['name'] }}</p>
-            </div>
-         </div>
+   <div class="mr-2"><img src="{{ asset($details['image']) }}"  width="25px" ></div>
+   <div class="media-body">
+      <p class="mt-1 mb-0 text-black">{{ $details['name'] }}
+         @if(isset($details['veg_nonveg']) && $details['veg_nonveg'] === 'veg')
+    <span class="badge badge-success" style="font-size:9px;">🟢 Veg</span>
+@elseif(isset($details['veg_nonveg']) && $details['veg_nonveg'] === 'non-veg')
+    <span class="badge badge-danger" style="font-size:9px;">🔴 Non-Veg</span>
+@endif
+      </p>
+   </div>
+</div>
       </div>
       @endforeach
       @endif

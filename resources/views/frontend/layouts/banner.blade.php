@@ -118,7 +118,8 @@ function getUserLocation(event) {
             2: "Location unavailable. Try entering manually.",
             3: "Location request timed out. Try again."
         };
-        alert(errors[error.code] || "Could not get location.");
+        const msg = errors[error.code] || "Could not get location.";
+        input.placeholder = msg;
     }, {
         timeout: 30000,
         maximumAge: 30000,

@@ -87,7 +87,15 @@
        $total += $details['price'] * $details['quantity']
     @endphp
 
-    <p class="mb-2"><i class="icofont-ui-press text-danger food-item"></i>{{ $details['name'] }} x {{  $details['quantity'] }}   <span class="float-right text-secondary">{{ currency($details['price'] * $details['quantity']) }}</span></p>
+   <p class="mb-2">
+    @if(isset($details['veg_nonveg']) && $details['veg_nonveg'] === 'veg')
+        <i class="icofont-ui-press text-success food-item"></i>
+    @else
+        <i class="icofont-ui-press text-danger food-item"></i>
+    @endif
+    {{ $details['name'] }} x {{ $details['quantity'] }}
+    <span class="float-right text-secondary">{{ currency($details['price'] * $details['quantity']) }}</span>
+</p>
     @endforeach
     @endif
 

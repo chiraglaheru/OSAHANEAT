@@ -102,7 +102,7 @@
             </tr>
             <tr>
                 <th width="50%">Order Amount: </th>
-                <td>{{ currency( $order->amount }}</td>
+                <td>{{ currency( $order->amount )}}</td>
             </tr>
             <tr>
                 <th width="50%">Order Status: </th>

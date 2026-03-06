@@ -12,7 +12,6 @@ use App\Models\Menu;
 use App\Models\Product;
 use App\Models\City;
 use App\Models\Gallery;
-use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 
 class RestaurantController extends Controller
 {
@@ -40,11 +39,10 @@ class RestaurantController extends Controller
         ]);
 
         if ($request->hasFile('image')) {
-            $uploadedFile = Cloudinary::upload($request->file('image')->getRealPath(), [
-                'folder' => 'foodweb/menu',
-                'transformation' => [['width' => 300, 'height' => 300, 'crop' => 'fill']]
-            ]);
-            $save_url = $uploadedFile->getSecurePath();
+            $image = $request->file('image');
+            $imageName = time() . '_' . $image->getClientOriginalName();
+            $image->move(public_path('upload/menu_images'), $imageName);
+            $save_url = 'upload/menu_images/' . $imageName;
 
             Menu::create([
                 'menu_name' => $request->menu_name,
@@ -75,11 +73,15 @@ class RestaurantController extends Controller
         $menu = Menu::findOrFail($request->id);
 
         if ($request->hasFile('image')) {
-            $uploadedFile = Cloudinary::upload($request->file('image')->getRealPath(), [
-                'folder' => 'foodweb/menu',
-                'transformation' => [['width' => 300, 'height' => 300, 'crop' => 'fill']]
-            ]);
-            $save_url = $uploadedFile->getSecurePath();
+            // Delete old image if exists
+            if ($menu->image && file_exists(public_path($menu->image))) {
+                unlink(public_path($menu->image));
+            }
+
+            $image = $request->file('image');
+            $imageName = time() . '_' . $image->getClientOriginalName();
+            $image->move(public_path('upload/menu_images'), $imageName);
+            $save_url = 'upload/menu_images/' . $imageName;
 
             $menu->update([
                 'menu_name' => $request->menu_name,
@@ -100,6 +102,11 @@ class RestaurantController extends Controller
     public function DeleteMenu($id)
     {
         $menu = Menu::findOrFail($id);
+
+        if ($menu->image && file_exists(public_path($menu->image))) {
+            unlink(public_path($menu->image));
+        }
+
         $menu->delete();
 
         return redirect()->back()->with([
@@ -143,17 +150,16 @@ class RestaurantController extends Controller
             'price' => 'required|numeric',
             'discount_price' => 'nullable|numeric',
             'image' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
-            'veg_nonveg' => 'nullable|in:veg,nonveg',
+            'veg_nonveg' => 'nullable|in:veg,non-veg',
         ]);
 
         $pcode = IdGenerator::generate(['table' => 'products', 'field' => 'code', 'length' => 5, 'prefix' => 'PC']);
 
         if ($request->hasFile('image')) {
-            $uploadedFile = Cloudinary::upload($request->file('image')->getRealPath(), [
-                'folder' => 'foodweb/products',
-                'transformation' => [['width' => 300, 'height' => 300, 'crop' => 'fill']]
-            ]);
-            $save_url = $uploadedFile->getSecurePath();
+            $image = $request->file('image');
+            $imageName = time() . '_' . $image->getClientOriginalName();
+            $image->move(public_path('upload/product_images'), $imageName);
+            $save_url = 'upload/product_images/' . $imageName;
 
             Product::create([
                 'name' => $request->name,
@@ -201,17 +207,21 @@ class RestaurantController extends Controller
             'price' => 'required|numeric',
             'discount_price' => 'nullable|numeric',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
-            'veg_nonveg' => 'nullable|in:veg,nonveg',
+            'veg_nonveg' => 'nullable|in:veg,non-veg',
         ]);
 
         $product = Product::findOrFail($request->id);
 
         if ($request->hasFile('image')) {
-            $uploadedFile = Cloudinary::upload($request->file('image')->getRealPath(), [
-                'folder' => 'foodweb/products',
-                'transformation' => [['width' => 300, 'height' => 300, 'crop' => 'fill']]
-            ]);
-            $save_url = $uploadedFile->getSecurePath();
+            // Delete old image if exists
+            if ($product->image && file_exists(public_path($product->image))) {
+                unlink(public_path($product->image));
+            }
+
+            $image = $request->file('image');
+            $imageName = time() . '_' . $image->getClientOriginalName();
+            $image->move(public_path('upload/product_images'), $imageName);
+            $save_url = 'upload/product_images/' . $imageName;
 
             $product->update([
                 'name' => $request->name,
@@ -252,6 +262,11 @@ class RestaurantController extends Controller
     public function DeleteProduct($id)
     {
         $product = Product::findOrFail($id);
+
+        if ($product->image && file_exists(public_path($product->image))) {
+            unlink(public_path($product->image));
+        }
+
         $product->delete();
 
         return redirect()->back()->with([
@@ -297,14 +312,13 @@ class RestaurantController extends Controller
         }
 
         foreach ($request->file('gallery_img') as $image) {
-            $uploadedFile = Cloudinary::upload($image->getRealPath(), [
-                'folder' => 'foodweb/gallery',
-                'transformation' => [['width' => 800, 'height' => 800, 'crop' => 'fill']]
-            ]);
+            $imageName = time() . '_' . uniqid() . '_' . $image->getClientOriginalName();
+            $image->move(public_path('upload/gallery_images'), $imageName);
+            $save_url = 'upload/gallery_images/' . $imageName;
 
             Gallery::create([
                 'client_id' => Auth::guard('client')->id(),
-                'gallery_img' => $uploadedFile->getSecurePath(),
+                'gallery_img' => $save_url,
             ]);
         }
 
@@ -329,13 +343,18 @@ class RestaurantController extends Controller
         $gallery = Gallery::findOrFail($request->id);
 
         if ($request->hasFile('gallery_img')) {
-            $uploadedFile = Cloudinary::upload($request->file('gallery_img')->getRealPath(), [
-                'folder' => 'foodweb/gallery',
-                'transformation' => [['width' => 800, 'height' => 800, 'crop' => 'fill']]
-            ]);
+            // Delete old image if exists
+            if ($gallery->gallery_img && file_exists(public_path($gallery->gallery_img))) {
+                unlink(public_path($gallery->gallery_img));
+            }
+
+            $image = $request->file('gallery_img');
+            $imageName = time() . '_' . $image->getClientOriginalName();
+            $image->move(public_path('upload/gallery_images'), $imageName);
+            $save_url = 'upload/gallery_images/' . $imageName;
 
             $gallery->update([
-                'gallery_img' => $uploadedFile->getSecurePath(),
+                'gallery_img' => $save_url,
             ]);
         }
 
@@ -348,6 +367,11 @@ class RestaurantController extends Controller
     public function DeleteGallery($id)
     {
         $gallery = Gallery::findOrFail($id);
+
+        if ($gallery->gallery_img && file_exists(public_path($gallery->gallery_img))) {
+            unlink(public_path($gallery->gallery_img));
+        }
+
         $gallery->delete();
 
         return redirect()->back()->with([

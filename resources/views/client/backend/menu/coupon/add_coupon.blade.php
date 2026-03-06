@@ -39,12 +39,12 @@
             </div>
         </div>
 
-        <div class="col-xl-6 col-md-6">
+        {{-- <div class="col-xl-6 col-md-6">
             <div class="form-group mb-3">
                 <label for="example-text-input" class="form-label">Coupon Dsc </label>
                 <input class="form-control" type="text" name="coupon_desc"  id="example-text-input">
             </div>
-        </div>
+        </div> --}}
         <div class="col-xl-6 col-md-6">
             <div class="form-group mb-3">
                 <label for="example-text-input" class="form-label">Coupon Discount </label>

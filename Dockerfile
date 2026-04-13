@@ -14,6 +14,9 @@ COPY . .
 
 RUN composer install --no-dev --optimize-autoloader --ignore-platform-reqs
 
+# Build frontend assets
+RUN npm install && npm run build
+
 RUN sed -i 's|DocumentRoot /var/www/html|DocumentRoot /var/www/html/public|g' /etc/apache2/sites-available/000-default.conf
 
 RUN echo '<Directory /var/www/html/public>\n\

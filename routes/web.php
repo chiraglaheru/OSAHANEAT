@@ -285,8 +285,8 @@ Route::get('/thanks', function () {
 })->name('thanks');
 
 Route::get('/test-login', function() {
-    $admin = \App\Models\Admin::where('email', 'admin@oshaneat.com')->first();
-    if (!$admin) return 'USER NOT FOUND IN DB';
-    $check = \Illuminate\Support\Facades\Hash::check('secret', $admin->password);
-    return 'User found. Hash check: ' . ($check ? 'PASS' : 'FAIL') . ' | Password in DB: ' . $admin->password;
+    $newPassword = \Illuminate\Support\Facades\Hash::make('secret123');
+    \App\Models\Admin::where('email', 'admin@oshaneat.com')
+        ->update(['password' => $newPassword]);
+    return 'Password updated to: ' . $newPassword;
 });

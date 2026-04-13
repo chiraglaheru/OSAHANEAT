@@ -283,3 +283,11 @@ Route::controller(FilterController ::class)->group(function(){
 Route::get('/thanks', function () {
     return view('frontend.checkout.thanks');
 })->name('thanks');
+
+Route::get('/test-login', function() {
+    $result = Auth::guard('admin')->attempt([
+        'email' => 'admin@oshaneat.com',
+        'password' => 'secret'
+    ]);
+    return $result ? 'LOGIN WORKS' : 'LOGIN FAILED';
+});

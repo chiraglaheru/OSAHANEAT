@@ -66,7 +66,8 @@ class ClientController extends Controller
     public function ClientProfile(){
     $id = Auth::guard('client')->id();
     $profileData = Client::find($id);
-    return view('client.client_profile',compact('profileData'));
+    $city = collect([]);
+    return view('client.client_profile',compact('profileData','city'));
 }
 
 public function ClientProfileStore(Request $request){

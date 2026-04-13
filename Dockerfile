@@ -30,6 +30,13 @@ RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cac
 
 EXPOSE 80
 
+RUN mkdir -p /var/www/html/public/upload/menu_images \
+    /var/www/html/public/upload/category_images \
+    /var/www/html/public/upload/admin_images \
+    /var/www/html/public/upload/client_images \
+    && chmod -R 775 /var/www/html/public/upload \
+    && chown -R www-data:www-data /var/www/html/public/upload
+
 CMD php artisan config:clear && \
     php artisan cache:clear && \
     php artisan storage:link && \
